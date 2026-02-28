@@ -26,6 +26,7 @@ export default function Login() {
                     id: res.data.user._id,
                     email: res.data.user.email,
                     token: res.data.token,
+                    role:res.data.user.role
                 })
             );
 

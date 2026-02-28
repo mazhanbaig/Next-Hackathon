@@ -3,7 +3,7 @@
 import React from "react";
 
 interface ButtonProps {
-    label: string;
+    label: any;
     onClick?: (e?: any) => any;
     type?: "button" | "submit";
     variant?: "primary" | "secondary" | "danger" | "theme" | "theme2";

@@ -1,12 +1,13 @@
 import api from "./api";
 
 // Register user
-const registerUser = async (name:string,email: string, password: string) => {
+const registerUser = async (email: string, password: string,name?:string,role?:string) => {
   try {
     const res = await api.post("/api/auth/register", {
-        name,
-        email,
-        password
+      email,
+      password,
+      name,
+        role
     });
     return res.data;  // <-- return the data
   } catch (error: any) {

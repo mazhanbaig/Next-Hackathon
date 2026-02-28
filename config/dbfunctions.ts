@@ -31,6 +31,7 @@ const logoutUser = async () => {
   try {
     // Clear local storage
     localStorage.removeItem("userInfo");
+    window.location.replace("/auth/login")
 
     return true;
   } catch (error: any) {

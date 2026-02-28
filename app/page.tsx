@@ -1,6 +1,8 @@
 "use client";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Button from "@/component/Button";
+import { logoutUser } from "@/config/dbfunctions";
 
 export default function Home() {
   const router = useRouter();
@@ -17,6 +19,7 @@ export default function Home() {
       <h1 className="text-3xl font-bold">Welcome to your Dashboard</h1>
       <br />
       <br />
+      <Button label={"logout"} onClick={logoutUser} />
       <p className="text-gray-500 mt-2">You are logged in!</p>
     </div>
   );

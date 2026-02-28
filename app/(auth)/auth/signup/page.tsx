@@ -24,7 +24,8 @@ export default function Signup() {
             localStorage.setItem(
                 "userInfo",
                 JSON.stringify({
-                    uid: res.data.token,
+                    id: res.data.user._id,
+                    token: res.data.token,
                     email: res.data.user.email,
                 })
             );
@@ -175,16 +176,6 @@ export default function Signup() {
                                     <p className="text-xs font-medium text-gray-700">Join 5,000+ new users this month</p>
                                 </div>
                             </div>
-                        </div>
-
-                        {/* Compact Footer */}
-                        <div className="pt-4 border-t border-gray-200">
-                            <p className="text-xs text-gray-400 text-center">
-                                By signing up, you agree to our{' '}
-                                <Link href="#" className="text-blue-500 hover:text-blue-600 hover:underline">Terms</Link>
-                                {' '}&{' '}
-                                <Link href="#" className="text-blue-500 hover:text-blue-600 hover:underline">Privacy</Link>
-                            </p>
                         </div>
                     </div>
                 </div>

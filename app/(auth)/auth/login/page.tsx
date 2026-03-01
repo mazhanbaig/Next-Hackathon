@@ -21,27 +21,40 @@ export default function Login() {
 
         setLoading(true);
         try {
-            const res: any = await loginUser(email, password);
+            const res = await loginUser(email, password);
 
-            // Save user info in localStorage
-            localStorage.setItem(
-                "userInfo",
-                JSON.stringify({
-                    id: res.data.user._id,
-                    email: res.data.user.email,
-                    token: res.data.token,
-                    role: res.data.user.role,
-                })
-            );
+            if (res.success && res.data) {
+                const { user, token } = res.data;
 
-            message.success(res.message);
+                // Save user info
+                localStorage.setItem(
+                    "userInfo",
+                    JSON.stringify({
+                        id: user._id,
+                        name: user.name,
+                        email: user.email,
+                        role: user.role,
+                        token: token
+                    })
+                );
 
-            // Redirect based on role (optional)
-            if (res.data.user.role === "admin") router.replace("/admin/dashboard");
-            else if (res.data.user.role === "doctor") router.replace(`/doctor/dashboard`);
-            else router.replace("/");
+                message.success(res.message || "Login successful!");
+
+                // Redirect based on role
+                if (user.role === "admin") {
+                    router.replace("/admin/dashboard");
+                } else if (user.role === "doctor") {
+                    router.replace("/doctor/dashboard");
+                } else {
+                    router.replace("/patient/dashboard");
+                }
+            } else {
+                message.error(res.message || "Login failed");
+            }
         } catch (err: any) {
-            message.error(err.message || "Invalid credentials");
+            console.error("Login error:", err);
+            message.error(err?.message || "Invalid credentials");
+        } finally {
             setLoading(false);
         }
     };
@@ -50,7 +63,6 @@ export default function Login() {
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/30 p-4">
             <div className="relative w-full max-w-3xl">
                 <div className="flex flex-col lg:flex-row bg-white/95 backdrop-blur-sm rounded-xl sm:border border-gray-200 sm:shadow-lg overflow-hidden">
-
                     {/* Left branding */}
                     <div className="lg:w-1/2 p-8 sm:bg-gradient-to-br from-blue-50 to-cyan-50 flex flex-col justify-center">
                         <h1 className="text-5xl lg:text-6xl font-extrabold bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 bg-clip-text text-transparent mb-4">
@@ -60,20 +72,20 @@ export default function Login() {
                     </div>
 
                     {/* Login Form */}
-                    <div className="lg:w-1/2 px-8 flex flex-col justify-center">
+                    <div className="lg:w-1/2 p-8 flex flex-col justify-center">
                         <div className="text-center mb-6">
                             <h2 className="text-2xl font-bold text-gray-800 mb-1">Login</h2>
                             <p className="text-gray-500 text-sm">Enter your credentials to sign in</p>
                         </div>
 
-                        <div className="mb-4 flex flex-col gap-3">
+                        <div className="mb-4 flex flex-col gap-4">
                             <input
                                 type="email"
                                 placeholder="Email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 disabled={loading}
-                                className="w-full px-4 py-2 border-b border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent"
+                                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
                             />
                             <input
                                 type="password"
@@ -81,7 +93,7 @@ export default function Login() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 disabled={loading}
-                                className="w-full px-4 py-2 border-b border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent"
+                                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
                             />
                             <Button
                                 label={loading ? "Logging in..." : "Login"}
@@ -91,22 +103,16 @@ export default function Login() {
                             />
                         </div>
 
-                        <div className="flex justify-between text-xs mb-4">
-                            <Link href="#" className="text-gray-500 hover:text-blue-600 hover:underline transition-colors px-2 py-1 rounded hover:bg-blue-50">
+                        <div className="flex justify-between text-sm">
+                            <Link href="#" className="text-gray-500 hover:text-blue-600 hover:underline transition-colors">
                                 Forgot password?
                             </Link>
-                            <Link href="/auth/signup" className="text-blue-600 hover:text-blue-700 hover:underline font-medium transition-colors px-2 py-1 rounded hover:bg-blue-50">
+                            <Link href="/auth/signup" className="text-blue-600 hover:text-blue-700 hover:underline font-medium transition-colors">
                                 Create an account →
                             </Link>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            {/* Background shapes */}
-            <div className="fixed inset-0 -z-10 overflow-hidden">
-                <div className="absolute top-1/4 right-1/4 w-64 h-64 bg-gradient-to-r from-cyan-200/10 to-blue-200/10 rounded-full blur-2xl"></div>
-                <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-indigo-200/10 to-purple-200/10 rounded-full blur-2xl"></div>
             </div>
         </div>
     );

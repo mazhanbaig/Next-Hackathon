@@ -53,7 +53,7 @@ export default function Home() {
       </div>
 
       {/* Role-based content */}
-      {renderRoleComponent()}
+      {/* {renderRoleComponent()} */}
     </div>
   );
 }

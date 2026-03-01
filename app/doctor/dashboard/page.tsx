@@ -1,349 +1,421 @@
-// 'use client';
-
-// import { useEffect, useState } from 'react';
-// import { useRouter } from 'next/navigation';
-// import { message } from 'antd';
-// import {
-//     ArrowLeft, Stethoscope, Calendar, Users,
-//     Mail, Phone, Clock, Edit, Trash2, ChevronRight
-// } from 'lucide-react';
-// import api from '@/config/api';
-
-// interface PageProps {
-//     params: { id: string };
-// }
-
-// export default function DoctorDetailsPage({ params }: PageProps) {
-//     const { id } = params;
-//     const router = useRouter();
-
-//     const [loading, setLoading] = useState(true);
-//     const [doctor, setDoctor] = useState<any>(null);
-//     const [userInfo, setUserInfo] = useState<any>(null);
-
-//     // Check auth and role
-//     useEffect(() => {
-//         const userStr = localStorage.getItem('userInfo');
-//         if (!userStr) {
-//             message.error('Please login first');
-//             router.push('/auth/login');
-//             return;
-//         }
-
-//         const user = JSON.parse(userStr);
-//         if (user.role !== 'doctor') {
-//             message.error('Access denied. Doctor only.');
-//             router.push('/auth/login');
-//             return;
-//         }
-
-//         setUserInfo(user);
-//     }, [router]);
-
-//     // Fetch doctor data
-//     useEffect(() => {
-//         if (userInfo && id) {
-//             fetchDoctorDetails();
-//         }
-//     }, [userInfo, id]);
-
-//     const fetchDoctorDetails = async () => {
-//         setLoading(true);
-//         try {
-//             const res = await api.get(`/api/doctor/${id}`);
-//             if (res.data?.success) {
-//                 setDoctor(res.data.data);
-//             } else {
-//                 message.error('Doctor not found');
-//                 router.push('/doctor/dashboard');
-//             }
-//         } catch (err) {
-//             console.error(err);
-//             message.error('Failed to fetch doctor details');
-//             router.push('/doctor/dashboard');
-//         } finally {
-//             setLoading(false);
-//         }
-//     };
-
-//     // Patient actions
-//     const handleAddPatient = () => {
-//         router.push(`/doctor/patients/new?doctor=${id}`);
-//     };
-
-//     const handleEditPatient = (patientId: string) => {
-//         router.push(`/doctor/patients/edit/${patientId}`);
-//     };
-
-//     const handleDeletePatient = async (patientId: string) => {
-//         if (!window.confirm('Are you sure you want to delete this patient?')) return;
-
-//         try {
-//             const res = await api.delete(`/api/patient/${patientId}`);
-//             if (res.data?.success) {
-//                 message.success('Patient deleted');
-//                 fetchDoctorDetails(); // Refresh list
-//             }
-//         } catch (err) {
-//             console.error(err);
-//             message.error('Failed to delete patient');
-//         }
-//     };
-
-//     const handleBack = () => {
-//         router.push('/doctor/dashboard');
-//     };
-
-//     if (loading) return (
-//         <div className="min-h-screen flex items-center justify-center">
-//             <div className="text-center">
-//                 <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
-//                 <p>Loading doctor details...</p>
-//             </div>
-//         </div>
-//     );
-
-//     if (!doctor) return (
-//         <div className="min-h-screen flex items-center justify-center">
-//             <div className="text-center">
-//                 <p>Doctor not found</p>
-//                 <button
-//                     onClick={handleBack}
-//                     className="mt-4 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-//                 >
-//                     Go Back
-//                 </button>
-//             </div>
-//         </div>
-//     );
-
-//     return (
-//         <div className="min-h-screen bg-purple-50 p-4 sm:p-6 lg:p-8">
-//             {/* Header */}
-//             <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50 p-4 flex justify-between items-center">
-//                 <div className="flex items-center gap-4">
-//                     <button onClick={handleBack} className="p-2 hover:bg-gray-100 rounded-lg">
-//                         <ArrowLeft className="h-5 w-5 text-gray-600" />
-//                     </button>
-//                     <h1 className="text-xl font-bold text-purple-700">Doctor Dashboard</h1>
-//                 </div>
-//             </header>
-
-//             {/* Doctor Info */}
-//             <div className="bg-white rounded-2xl p-6 shadow-lg mt-6 flex flex-col md:flex-row items-center md:items-start gap-6">
-//                 <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center">
-//                     <Stethoscope className="h-12 w-12 text-blue-600" />
-//                 </div>
-//                 <div className="flex-1">
-//                     <h1 className="text-3xl font-bold text-gray-900 mb-2">{doctor.name}</h1>
-//                     <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">{doctor.specialization}</span>
-//                 </div>
-//                 <div className="text-right">
-//                     <p className="text-sm text-gray-500">Member since</p>
-//                     <p className="font-medium text-gray-900">{new Date(doctor.createdAt).toLocaleDateString()}</p>
-//                 </div>
-//             </div>
-
-//             {/* Patients Section */}
-//             <div className="bg-white rounded-xl p-6 shadow-lg mt-6">
-//                 <div className="flex justify-between items-center mb-4">
-//                     <h2 className="text-lg font-semibold text-gray-900">Assigned Patients</h2>
-//                     <button
-//                         onClick={handleAddPatient}
-//                         className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-//                     >
-//                         Add Patient
-//                     </button>
-//                 </div>
-
-//                 {doctor.patients?.length ? (
-//                     <div className="space-y-3">
-//                         {doctor.patients.map((patient: any) => (
-//                             <div
-//                                 key={patient._id}
-//                                 className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-purple-200 transition-all"
-//                             >
-//                                 <div className="flex items-center gap-3">
-//                                     <Users className="h-5 w-5 text-purple-600" />
-//                                     <div>
-//                                         <p className="font-medium text-gray-900">{patient.name}</p>
-//                                         <p className="text-xs text-gray-500">{patient.age} years • {patient.gender}</p>
-//                                     </div>
-//                                 </div>
-//                                 <div className="flex gap-2">
-//                                     <button onClick={() => handleEditPatient(patient._id)} className="px-2 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-//                                         Edit
-//                                     </button>
-//                                     <button onClick={() => handleDeletePatient(patient._id)} className="px-2 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700">
-//                                         Delete
-//                                     </button>
-//                                 </div>
-//                             </div>
-//                         ))}
-//                     </div>
-//                 ) : (
-//                     <p className="text-center text-gray-500 py-4">No patients assigned</p>
-//                 )}
-//             </div>
-//         </div>
-//     );
-// }
-
-
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { message } from 'antd';
-import { ArrowLeft, Users, Stethoscope, Edit, Trash2 } from 'lucide-react';
-import api from '@/config/api';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { message } from "antd";
+import {
+    Users, Calendar, Search, LogOut,
+    Stethoscope, Clock, UserPlus, FileText
+} from "lucide-react";
+import api from "@/config/api";
+import { format } from "date-fns";
 
-export default function DoctorDetailsPage() {
+type UserInfo = {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+};
+
+type Patient = {
+    _id: string;
+    name: string;
+    age: number;
+    gender: string;
+    contact?: string;
+};
+
+type Appointment = {
+    _id: string;
+    patientId: {
+        _id: string;
+        name: string;
+        age: number;
+        gender: string;
+    };
+    date: string;
+    time: string;
+    status: string;
+};
+
+export default function DoctorDashboardPage() {
+    const [loading, setLoading] = useState(true);
+    const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+    const [patients, setPatients] = useState<Patient[]>([]);
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [greeting, setGreeting] = useState("");
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [formData, setFormData] = useState({
+        name: '',
+        age: '',
+        gender: '',
+        contact: ''
+    });
+
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const id = searchParams.get('id'); // doctor ID from URL
-
-    const [loading, setLoading] = useState<any>(true);
-    const [doctor, setDoctor] = useState<any>(null);
 
     useEffect(() => {
-        if (id) fetchDoctor();
-    }, [id]);
+        const hour = new Date().getHours();
+        setGreeting(hour < 12 ? "Good Morning" : hour < 18 ? "Good Afternoon" : "Good Evening");
+    }, []);
 
-    const fetchDoctor = async () => {
+    useEffect(() => {
+        const userStr = localStorage.getItem('userInfo');
+        if (!userStr) {
+            router.push('/auth/login');
+            return;
+        }
+        const user = JSON.parse(userStr);
+        if (user.role !== 'doctor') {
+            router.push('/auth/login');
+            return;
+        }
+        setUserInfo(user);
+    }, [router]);
+
+    useEffect(() => {
+        if (userInfo) {
+            fetchData();
+        }
+    }, [userInfo]);
+
+    const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await api.get(`/api/doctor/${id}`);
-            if (res.data?.success) {
-                setDoctor(res.data.data);
-            } else {
-                message.error('Doctor not found');
-                router.push('/doctor/dashboard');
-            }
-        } catch (err) {
-            console.error(err);
-            message.error('Failed to fetch doctor');
-            router.push('/doctor/dashboard');
+            const [patientsRes, appointmentsRes] = await Promise.all([
+                api.get('/api/patient/'),
+                api.get('/api/appointment/')
+            ]);
+
+            setPatients(patientsRes.data?.data || []);
+
+            // Filter today's appointments for this doctor
+            const allAppointments = appointmentsRes.data?.data || [];
+            const todayApps = allAppointments.filter((apt: Appointment) =>
+                apt.date === selectedDate
+            );
+            setAppointments(todayApps);
+        } catch (error) {
+            message.error('Failed to fetch data');
         } finally {
             setLoading(false);
         }
     };
 
-    const deletePatient = async (patientId:any) => {
-        if (!window.confirm('Are you sure you want to delete this patient?')) return;
+    const handleAddPatient = async () => {
         try {
-            const res = await api.delete(`/api/patient/${patientId}`);
-            if (res.data?.success) {
-                message.success('Patient deleted');
-                fetchDoctor();
+            const response = await api.post('/api/patient/', {
+                name: formData.name,
+                age: parseInt(formData.age),
+                gender: formData.gender.toLowerCase(),
+                contact: formData.contact,
+                createdBy: userInfo?._id
+            });
+
+            if (response.data?.success) {
+                message.success('Patient added successfully');
+                setShowAddModal(false);
+                setFormData({ name: '', age: '', gender: '', contact: '' });
+                fetchData();
             }
-        } catch (err) {
-            console.error(err);
-            message.error('Failed to delete patient');
+        } catch (error) {
+            message.error('Failed to add patient');
         }
     };
 
-    if (loading)
+    const handleLogout = () => {
+        localStorage.removeItem('userInfo');
+        router.push('/auth/login');
+    };
+
+    const filteredPatients = patients.filter(p =>
+        p.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const todayAppointments = appointments.filter(apt => apt.date === selectedDate);
+
+    if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <p className="text-gray-500">Loading doctor data...</p>
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-gray-600">Loading...</p>
+                </div>
             </div>
         );
-
-    if (!doctor)
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center">
-                <p className="text-gray-500">Doctor not found</p>
-                <button
-                    onClick={() => router.push('/doctor/dashboard')}
-                    className="mt-4 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
-                >
-                    Back
-                </button>
-            </div>
-        );
+    }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+        <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <header className="flex justify-between items-center mb-6 bg-white p-4 rounded shadow">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => router.push('/doctor/dashboard')}
-                        className="p-2 hover:bg-gray-100 rounded"
-                    >
-                        <ArrowLeft className="w-5 h-5 text-gray-600" />
-                    </button>
-                    <h1 className="text-xl font-bold text-gray-800">Doctor Dashboard</h1>
-                </div>
-            </header>
-
-            {/* Doctor Info */}
-            <div className="bg-white p-6 rounded-2xl shadow mb-6 flex flex-col md:flex-row items-center md:items-start gap-6">
-                <div className="w-24 h-24 flex items-center justify-center bg-blue-100 rounded-2xl">
-                    <Stethoscope className="w-12 h-12 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                    <h2 className="text-3xl font-bold text-gray-900 mb-1">{doctor.name}</h2>
-                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                        {doctor.specialization}
-                    </span>
-                </div>
-                <div className="text-right">
-                    <p className="text-sm text-gray-500">Member since</p>
-                    <p className="font-medium text-gray-900">{new Date(doctor.createdAt).toLocaleDateString()}</p>
-                </div>
-            </div>
-
-            {/* Patients Section */}
-            <div className="bg-white p-6 rounded-xl shadow">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                        <Users className="w-5 h-5 text-purple-600" />
-                        Assigned Patients
-                    </h2>
-                    <button
-                        onClick={() => router.push(`/doctor/patients/new?doctor=${id}`)}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                    >
-                        Add Patient
-                    </button>
-                </div>
-
-                {doctor.patients?.length ? (
-                    <div className="space-y-3">
-                        {doctor.patients.map((patient:any) => (
-                            <div
-                                key={patient._id}
-                                className="flex justify-between items-center p-3 border border-gray-100 rounded-lg hover:border-purple-300 transition"
-                            >
-                                <div>
-                                    <p className="font-medium text-gray-900">{patient.name}</p>
-                                    <p className="text-sm text-gray-500">
-                                        {patient.age} yrs • {patient.gender}
-                                    </p>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => router.push(`/doctor/patients/edit/${patient._id}`)}
-                                        className="px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                                    >
-                                        <Edit className="w-4 h-4 inline" />
-                                    </button>
-                                    <button
-                                        onClick={() => deletePatient(patient._id)}
-                                        className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-                                    >
-                                        <Trash2 className="w-4 h-4 inline" />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+            <div className="bg-white border-b border-gray-200 px-6 py-4">
+                <div className="flex items-center justify-between max-w-7xl mx-auto">
+                    <div className="flex items-center gap-3">
+                        <Stethoscope className="h-6 w-6 text-blue-600" />
+                        <h1 className="text-xl font-semibold text-gray-900">Doctor Dashboard</h1>
                     </div>
-                ) : (
-                    <p className="text-center text-gray-500 py-4">No patients assigned</p>
-                )}
+                    <div className="flex items-center gap-4">
+                        <span className="text-sm text-gray-600">{userInfo?.name}</span>
+                        <button
+                            onClick={handleLogout}
+                            className="p-2 hover:bg-gray-100 rounded-lg"
+                        >
+                            <LogOut className="h-4 w-4 text-gray-600" />
+                        </button>
+                    </div>
+                </div>
             </div>
+
+            {/* Main Content */}
+            <div className="max-w-7xl mx-auto px-6 py-8">
+                {/* Welcome */}
+                <div className="mb-8">
+                    <h2 className="text-2xl font-bold text-gray-900">
+                        {greeting}, Dr. {userInfo?.name?.split(' ')[0]}
+                    </h2>
+                    <p className="text-gray-600 mt-1">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div className="bg-white rounded-xl border border-gray-200 p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-gray-600">Total Patients</p>
+                                <p className="text-2xl font-bold text-gray-900 mt-1">{patients.length}</p>
+                            </div>
+                            <div className="p-3 bg-blue-100 rounded-lg">
+                                <Users className="h-5 w-5 text-blue-600" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl border border-gray-200 p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-gray-600">Today's Appointments</p>
+                                <p className="text-2xl font-bold text-gray-900 mt-1">{todayAppointments.length}</p>
+                            </div>
+                            <div className="p-3 bg-green-100 rounded-lg">
+                                <Calendar className="h-5 w-5 text-green-600" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl border border-gray-200 p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-gray-600">Pending</p>
+                                <p className="text-2xl font-bold text-gray-900 mt-1">
+                                    {todayAppointments.filter(a => a.status === 'scheduled').length}
+                                </p>
+                            </div>
+                            <div className="p-3 bg-yellow-100 rounded-lg">
+                                <Clock className="h-5 w-5 text-yellow-600" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    <button
+                        onClick={() => setShowAddModal(true)}
+                        className="bg-white rounded-xl border border-gray-200 p-4 hover:border-blue-300 transition-all text-left"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-blue-100 rounded-lg">
+                                <UserPlus className="h-5 w-5 text-blue-600" />
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-gray-900">Add New Patient</h3>
+                                <p className="text-sm text-gray-600">Register a new patient</p>
+                            </div>
+                        </div>
+                    </button>
+
+                    <button
+                        onClick={() => router.push('/doctor/appointments')}
+                        className="bg-white rounded-xl border border-gray-200 p-4 hover:border-blue-300 transition-all text-left"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-purple-100 rounded-lg">
+                                <Calendar className="h-5 w-5 text-purple-600" />
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-gray-900">View Schedule</h3>
+                                <p className="text-sm text-gray-600">Manage appointments</p>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+
+                {/* Today's Schedule */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Today's Schedule</h3>
+                    {todayAppointments.length > 0 ? (
+                        <div className="space-y-3">
+                            {todayAppointments.sort((a, b) => a.time.localeCompare(b.time)).map((apt) => (
+                                <div key={apt._id} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
+                                    <div className="flex items-center gap-4">
+                                        <span className="font-medium text-gray-900">{apt.time}</span>
+                                        <div>
+                                            <p className="font-medium text-gray-900">{apt.patientId?.name}</p>
+                                            <p className="text-sm text-gray-600">{apt.patientId?.age} years • {apt.patientId?.gender}</p>
+                                        </div>
+                                    </div>
+                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${apt.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                            apt.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                                'bg-yellow-100 text-yellow-700'
+                                        }`}>
+                                        {apt.status}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-center text-gray-500 py-4">No appointments scheduled for today</p>
+                    )}
+                </div>
+
+                {/* Patients List */}
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900">My Patients</h3>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="Search patients..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead className="bg-gray-50 border-y border-gray-200">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Age</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gender</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {filteredPatients.map((patient) => (
+                                    <tr key={patient._id} className="hover:bg-gray-50">
+                                        <td className="px-4 py-3 font-medium text-gray-900">{patient.name}</td>
+                                        <td className="px-4 py-3 text-gray-600">{patient.age}</td>
+                                        <td className="px-4 py-3">
+                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${patient.gender === 'male' ? 'bg-blue-100 text-blue-700' :
+                                                    patient.gender === 'female' ? 'bg-pink-100 text-pink-700' :
+                                                        'bg-gray-100 text-gray-700'
+                                                }`}>
+                                                {patient.gender}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-gray-600">{patient.contact || 'N/A'}</td>
+                                        <td className="px-4 py-3">
+                                            <button
+                                                onClick={() => router.push(`/doctor/patients/${patient._id}`)}
+                                                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                                            >
+                                                View Details
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {filteredPatients.length === 0 && (
+                                    <tr>
+                                        <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                                            No patients found
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            {/* Add Patient Modal */}
+            {showAddModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl max-w-md w-full p-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Patient</h3>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                <input
+                                    type="text"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Enter patient name"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Age</label>
+                                <input
+                                    type="number"
+                                    value={formData.age}
+                                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Enter age"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                                <select
+                                    value={formData.gender}
+                                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="">Select gender</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Contact</label>
+                                <input
+                                    type="text"
+                                    value={formData.contact}
+                                    onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Enter contact number"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 mt-6">
+                            <button
+                                onClick={handleAddPatient}
+                                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                                Add Patient
+                            </button>
+                            <button
+                                onClick={() => setShowAddModal(false)}
+                                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

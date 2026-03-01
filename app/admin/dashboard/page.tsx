@@ -1,26 +1,47 @@
 'use client';
 
-import { message } from "antd";
-import { useRouter } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { message } from "antd";
 import {
     Users, Calendar, Search, Edit, Trash2, X,
-    Stethoscope, ChevronRight,
-    Heart, FileText, CreditCard, LogOut
+    Stethoscope, ChevronRight, Heart, FileText, CreditCard, LogOut
 } from "lucide-react";
 import api from "@/config/api";
 
+type UserInfo = {
+    name: string;
+    email: string;
+    role: string;
+};
+
+type Doctor = {
+    _id: string;
+    name: string;
+    specialization: string;
+    bio?: string;
+    userId?: { _id: string; email: string };
+};
+
+type Patient = {
+    _id: string;
+    name: string;
+    age: number;
+    gender: string;
+    contact?: string;
+};
+
 export default function AdminDashboardPage() {
-    const [loading, setLoading] = useState<any>(true);
-    const [userInfo, setUserInfo] = useState<any>(null);
-    const [doctors, setDoctors] = useState<any>([]);
-    const [patients, setPatients] = useState<any>([]);
-    const [greeting, setGreeting] = useState<any>("");
-    const [activeTab, setActiveTab] = useState<any>('overview');
-    const [searchTerm, setSearchTerm] = useState<any>('');
-    const [showModal, setShowModal] = useState<any>(false);
-    const [editingItem, setEditingItem] = useState<any>(null);
-    const [modalType, setModalType] = useState<any>('doctor');
+    const [loading, setLoading] = useState(true);
+    const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+    const [doctors, setDoctors] = useState<Doctor[]>([]);
+    const [patients, setPatients] = useState<Patient[]>([]);
+    const [greeting, setGreeting] = useState("");
+    const [activeTab, setActiveTab] = useState<'overview' | 'doctors' | 'patients'>('overview');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [showModal, setShowModal] = useState(false);
+    const [editingItem, setEditingItem] = useState<Doctor | Patient | null>(null);
+    const [modalType, setModalType] = useState<'doctor' | 'patient'>('doctor');
     const [formData, setFormData] = useState<any>({
         name: '',
         userId: '',
@@ -37,322 +58,149 @@ export default function AdminDashboardPage() {
     // Greeting based on time
     useEffect(() => {
         const hour = new Date().getHours();
-        setGreeting(
-            hour < 12 ? "Good Morning" :
-                hour < 18 ? "Good Afternoon" :
-                    "Good Evening"
-        );
+        setGreeting(hour < 12 ? "Good Morning" : hour < 18 ? "Good Afternoon" : "Good Evening");
     }, []);
 
-    // Check authentication
+    // Auth check
     useEffect(() => {
-        const checkAuth = async () => {
-            try {
-                const userStr = localStorage.getItem('userInfo');
-
-                if (!userStr) {
-                    message.error('Please login first');
-                    router.push('/auth/login');
-                    return;
-                }
-
-                const user = JSON.parse(userStr);
-                if (user.role !== 'admin') {
-                    message.error('Access denied. Admin only.');
-                    router.push('/auth/login');
-                    return;
-                }
-                setUserInfo(user);
-            } catch (error) {
-                console.error('Error parsing user data:', error);
-                router.push('/auth/login');
-            }
-        };
-
-        checkAuth();
+        const userStr = localStorage.getItem('userInfo');
+        if (!userStr) {
+            message.error('Please login first');
+            router.push('/auth/login');
+            return;
+        }
+        const user = JSON.parse(userStr);
+        if (user.role !== 'admin') {
+            message.error('Access denied. Admin only.');
+            router.push('/auth/login');
+            return;
+        }
+        setUserInfo(user);
     }, [router]);
 
     // Fetch data
     useEffect(() => {
-        if (userInfo) {
-            fetchData();
-        }
+        if (userInfo) fetchData();
     }, [userInfo]);
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            console.log('Fetching data...');
-
-            // Fetch doctors
             const doctorsRes = await api.get('/api/doctor/');
-            console.log('Doctors response:', doctorsRes.data);
+            setDoctors(doctorsRes.data?.data || []);
 
-            if (doctorsRes.data && doctorsRes.data.success) {
-                setDoctors(doctorsRes.data.data || []);
-            } else {
-                setDoctors([]);
-            }
-
-            // Fetch patients
             const patientsRes = await api.get('/api/patient/');
-            console.log('Patients response:', patientsRes.data);
-
-            if (patientsRes.data && patientsRes.data.success) {
-                setPatients(patientsRes.data.data || []);
-                console.log('Patients set:', patientsRes.data.data);
-            } else {
-                console.warn('Unexpected patients response:', patientsRes.data);
-                setPatients([]);
-            }
-
-        } catch (error:any) {
-            console.error('Error fetching data:', error);
-            if (error.response) {
-                console.error('Error status:', error.response.status);
-                console.error('Error data:', error.response.data);
-
-                if (error.response.status === 403) {
-                    message.error('You do not have permission to access this data');
-                } else if (error.response.status === 404) {
-                    message.error('API endpoint not found. Please check server connection.');
-                } else {
-                    message.error(error.response.data?.message || 'Failed to fetch data');
-                }
-            } else if (error.request) {
-                console.error('No response received:', error.request);
-                message.error('No response from server. Please check if backend is running.');
-            } else {
-                console.error('Error:', error.message);
-                message.error('Failed to make request');
-            }
+            setPatients(patientsRes.data?.data || []);
+        } catch (error: any) {
+            console.error(error);
+            message.error('Failed to fetch data from server');
         } finally {
             setLoading(false);
         }
     };
-    // Handle modal open
-    const openAddModal = (type:any) => {
+
+    // Modal handlers
+    const openAddModal = (type: 'doctor' | 'patient') => {
         setModalType(type);
         setEditingItem(null);
-        setFormData({
-            name: '',
-            userId: '',
-            specialization: '',
-            bio: '',
-            age: '',
-            gender: '',
-            contact: '',
-            email: ''
-        });
+        setFormData({ name: '', userId: '', specialization: '', bio: '', age: '', gender: '', contact: '', email: '' });
         setShowModal(true);
     };
 
-    const openEditModal = (item: any, type: any) => {
+    const openEditModal = (item: Doctor | Patient, type: 'doctor' | 'patient') => {
         setModalType(type);
         setEditingItem(item);
         if (type === 'doctor') {
             setFormData({
-                name: item.name || '',
-                userId: item.userId?._id || item.userId || '',
-                specialization: item.specialization || '',
-                bio: item.bio || '',
-                age: '',
-                gender: '',
-                contact: '',
-                email: item.userId?.email || ''
+                name: item.name,
+                userId: (item as Doctor).userId?._id || '',
+                specialization: (item as Doctor).specialization,
+                bio: (item as Doctor).bio || '',
+                email: (item as Doctor).userId?.email || ''
             });
         } else {
             setFormData({
-                name: item.name || '',
-                userId: '',
-                specialization: '',
-                bio: '',
-                age: item.age || '',
-                gender: item.gender || '',
-                contact: item.contact || '',
-                email: ''
+                name: item.name,
+                age: (item as Patient).age,
+                gender: (item as Patient).gender,
+                contact: (item as Patient).contact || ''
             });
         }
         setShowModal(true);
     };
 
-    // Handle form submit
+    // Submit form
     const handleSubmit = async () => {
         try {
             let response;
-
             if (modalType === 'doctor') {
                 if (editingItem) {
-                    // Update doctor
-                    response = await api.put(`/api/doctor/${editingItem._id}`, {
-                        name: formData.name,
-                        specialization: formData.specialization,
-                        bio: formData.bio
-                    });
+                    response = await api.put(`/api/doctor/${editingItem._id}`, { name: formData.name, specialization: formData.specialization, bio: formData.bio });
                 } else {
-                    // Add doctor
-                    response = await api.post('/api/doctor/', {
-                        name: formData.name,
-                        userId: formData.userId,
-                        specialization: formData.specialization,
-                        bio: formData.bio
-                    });
+                    response = await api.post('/api/doctor/', formData);
                 }
             } else {
                 if (editingItem) {
-                    // Update patient
-                    response = await api.put(`/api/patient/${editingItem._id}`, {
-                        name: formData.name,
-                        age: formData.age,
-                        gender: formData.gender,
-                        contact: formData.contact
-                    });
+                    response = await api.put(`/api/patient/${editingItem._id}`, formData);
                 } else {
-                    // Add patient
-                    response = await api.post('/api/patient/', {
-                        name: formData.name,
-                        age: formData.age,
-                        gender: formData.gender,
-                        contact: formData.contact
-                    });
+                    response = await api.post('/api/patient/', formData);
                 }
             }
-
-            if (response.data && response.data.success) {
+            if (response.data.success) {
                 message.success(`${modalType} ${editingItem ? 'updated' : 'added'} successfully`);
                 setShowModal(false);
                 fetchData();
             }
-        } catch (error) {
-            console.error('Error submitting form:', error);
-            message.error(error.response?.data?.message || 'Operation failed');
+        } catch (error: any) {
+            console.error(error);
+            message.error('Operation failed');
         }
     };
 
-    // Handle delete
-    const handleDelete = async (id, type) => {
+    const handleDelete = async (id: string, type: 'doctor' | 'patient') => {
         if (!window.confirm(`Are you sure you want to delete this ${type}?`)) return;
-
         try {
             const response = await api.delete(`/api/${type}/${id}`);
-            if (response.data && response.data.success) {
+            if (response.data.success) {
                 message.success(`${type} deleted successfully`);
                 fetchData();
             }
-        } catch (error) {
-            console.error('Error deleting:', error);
-            message.error(error.response?.data?.message || `Failed to delete ${type}`);
+        } catch (error: any) {
+            console.error(error);
+            message.error(`Failed to delete ${type}`);
         }
     };
 
-    // Handle view details
-    const viewDetails = (id, type) => {
+    const viewDetails = (id: string, type: 'doctor' | 'patient') => {
         router.push(`/admin/${type}s/${id}`);
     };
 
-    // Handle logout
     const handleLogout = () => {
         localStorage.removeItem('userInfo');
         router.push('/auth/login');
     };
 
-    // Filtered data based on search
-    const filteredDoctors = useMemo(() => {
-        return (doctors || []).filter(doctor =>
-            doctor.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            doctor.specialization?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }, [doctors, searchTerm]);
+    const filteredDoctors = useMemo(() => doctors.filter(d => d.name.toLowerCase().includes(searchTerm.toLowerCase()) || d.specialization.toLowerCase().includes(searchTerm.toLowerCase())), [doctors, searchTerm]);
+    const filteredPatients = useMemo(() => patients.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.gender.toLowerCase().includes(searchTerm.toLowerCase())), [patients, searchTerm]);
 
-    const filteredPatients = useMemo(() => {
-        return (patients || []).filter(patient =>
-            patient.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            patient.gender?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }, [patients, searchTerm]);
-
-    // Stats
     const stats = useMemo(() => [
-        {
-            title: "Total Doctors",
-            value: doctors?.length || 0,
-            icon: <Stethoscope className="h-5 w-5 text-blue-600" />,
-            bgColor: "bg-gradient-to-br from-blue-100 to-blue-50",
-            textColor: "text-blue-600"
-        },
-        {
-            title: "Total Patients",
-            value: patients?.length || 0,
-            icon: <Users className="h-5 w-5 text-purple-600" />,
-            bgColor: "bg-gradient-to-br from-purple-100 to-purple-50",
-            textColor: "text-purple-600"
-        },
-        {
-            title: "Appointments",
-            value: "0",
-            icon: <Calendar className="h-5 w-5 text-green-600" />,
-            bgColor: "bg-gradient-to-br from-green-100 to-green-50",
-            textColor: "text-green-600"
-        },
-        {
-            title: "Revenue",
-            value: "$0",
-            icon: <CreditCard className="h-5 w-5 text-amber-600" />,
-            bgColor: "bg-gradient-to-br from-amber-100 to-amber-50",
-            textColor: "text-amber-600"
-        }
+        { title: "Total Doctors", value: doctors.length, icon: <Stethoscope className="h-5 w-5 text-blue-600" />, bgColor: "bg-gradient-to-br from-blue-100 to-blue-50", textColor: "text-blue-600" },
+        { title: "Total Patients", value: patients.length, icon: <Users className="h-5 w-5 text-purple-600" />, bgColor: "bg-gradient-to-br from-purple-100 to-purple-50", textColor: "text-purple-600" },
+        { title: "Appointments", value: "0", icon: <Calendar className="h-5 w-5 text-green-600" />, bgColor: "bg-gradient-to-br from-green-100 to-green-50", textColor: "text-green-600" },
+        { title: "Revenue", value: "$0", icon: <CreditCard className="h-5 w-5 text-amber-600" />, bgColor: "bg-gradient-to-br from-amber-100 to-amber-50", textColor: "text-amber-600" }
     ], [doctors, patients]);
 
-    // Quick actions
     const quickActions = [
-        {
-            icon: <Stethoscope className="h-6 w-6" />,
-            label: "Add Doctor",
-            description: "Register new doctor",
-            textColor: "text-blue-600",
-            bgColor: "bg-gradient-to-br from-blue-100 to-blue-50",
-            action: () => openAddModal('doctor')
-        },
-        {
-            icon: <Users className="h-6 w-6" />,
-            label: "Add Patient",
-            description: "Register new patient",
-            textColor: "text-purple-600",
-            bgColor: "bg-gradient-to-br from-purple-100 to-purple-50",
-            action: () => openAddModal('patient')
-        },
-        {
-            icon: <Calendar className="h-6 w-6" />,
-            label: "Appointments",
-            description: "Schedule appointments",
-            textColor: "text-green-600",
-            bgColor: "bg-gradient-to-br from-green-100 to-green-50",
-            action: () => router.push('/admin/appointments')
-        },
-        {
-            icon: <FileText className="h-6 w-6" />,
-            label: "Reports",
-            description: "View analytics",
-            textColor: "text-amber-600",
-            bgColor: "bg-gradient-to-br from-amber-100 to-amber-50",
-            action: () => router.push('/admin/reports')
-        }
+        { icon: <Stethoscope className="h-6 w-6" />, label: "Add Doctor", description: "Register new doctor", textColor: "text-blue-600", bgColor: "bg-gradient-to-br from-blue-100 to-blue-50", action: () => openAddModal('doctor') },
+        { icon: <Users className="h-6 w-6" />, label: "Add Patient", description: "Register new patient", textColor: "text-purple-600", bgColor: "bg-gradient-to-br from-purple-100 to-purple-50", action: () => openAddModal('patient') },
+        { icon: <Calendar className="h-6 w-6" />, label: "Appointments", description: "Schedule appointments", textColor: "text-green-600", bgColor: "bg-gradient-to-br from-green-100 to-green-50", action: () => router.push('/admin/appointments') },
+        { icon: <FileText className="h-6 w-6" />, label: "Reports", description: "View analytics", textColor: "text-amber-600", bgColor: "bg-gradient-to-br from-amber-100 to-amber-50", action: () => router.push('/admin/reports') }
     ];
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-white via-white to-purple-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading dashboard...</p>
-                </div>
-            </div>
-        );
-    }
+    if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="text-gray-500">Loading...</div></div>;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-white via-white to-purple-50">
-            {/* Header */}
+        <div className="min-h-screen bg-gray-50">            {/* Header */}
             <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
                 <div className="px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex items-center justify-between">

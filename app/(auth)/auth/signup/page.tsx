@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { message } from "antd";
 import Button from "@/component/Button";
 import { registerUser } from "@/config/dbfunctions";
+import Link from "next/link";
 
 export default function Signup() {
     const router = useRouter();
@@ -12,15 +13,17 @@ export default function Signup() {
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [role, setRole] = useState<"patient" | "doctor" | "admin">("patient"); // default role
+    const [role, setRole] = useState<"patient" | "doctor" | "admin">("patient");
 
     const handleSignup = async () => {
-        if (!email || !password) return message.error("Email and password are required");
+        if (!name || !email || !password) {
+            message.error("All fields are required");
+            return;
+        }
 
         setLoading(true);
-
         try {
-            const res = await registerUser(name, email, password, role );
+            const res = await registerUser(name, email, password, role);
 
             localStorage.setItem(
                 "userInfo",
@@ -33,9 +36,10 @@ export default function Signup() {
             );
 
             message.success(res.message);
-            router.replace("/"); // redirect to dashboard
+            if (res.data.user.role === "admin") router.replace("/admin/dashboard");
+            else if (res.data.user.role === "doctor") router.replace(`/doctor/dashboard`);
+            else router.replace("/"); 
         } catch (err: any) {
-            console.log(err);
             message.error(err.message || "Signup failed");
             setLoading(false);
         }
@@ -46,7 +50,7 @@ export default function Signup() {
             <div className="relative w-full max-w-3xl">
                 <div className="flex flex-col lg:flex-row bg-white/95 backdrop-blur-sm rounded-xl sm:border border-gray-200 sm:shadow-lg overflow-hidden">
 
-                    {/* Left side branding */}
+                    {/* Left branding */}
                     <div className="lg:w-1/2 p-8 sm:bg-gradient-to-br from-blue-50 to-cyan-50 flex flex-col justify-center">
                         <h1 className="text-5xl lg:text-6xl font-extrabold bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 bg-clip-text text-transparent mb-4">
                             Join Our Clinic
@@ -56,7 +60,7 @@ export default function Signup() {
                         </p>
                     </div>
 
-                    {/* Right side signup form */}
+                    {/* Signup Form */}
                     <div className="lg:w-1/2 px-8 flex flex-col justify-center">
                         <div className="text-center mb-6">
                             <h2 className="text-2xl font-bold text-gray-800 mb-1">Sign Up</h2>
@@ -69,6 +73,7 @@ export default function Signup() {
                                 placeholder="Full Name"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
+                                disabled={loading}
                                 className="w-full px-4 py-2 border-b border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent"
                             />
                             <input
@@ -76,6 +81,7 @@ export default function Signup() {
                                 placeholder="Email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
+                                disabled={loading}
                                 className="w-full px-4 py-2 border-b border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent"
                             />
                             <input
@@ -83,13 +89,14 @@ export default function Signup() {
                                 placeholder="Password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                disabled={loading}
                                 className="w-full px-4 py-2 border-b border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent"
                             />
 
-                            {/* Role selector */}
                             <select
                                 value={role}
                                 onChange={(e) => setRole(e.target.value as "patient" | "doctor" | "admin")}
+                                disabled={loading}
                                 className="w-full px-4 py-2 border-b border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent"
                             >
                                 <option value="patient">Patient</option>
@@ -101,23 +108,23 @@ export default function Signup() {
                                 label={loading ? "Signing up..." : "Sign Up"}
                                 variant="theme2"
                                 onClick={handleSignup}
+                                disabled={loading}
                             />
                         </div>
 
                         <div className="flex justify-between text-xs mb-4">
                             <p className="text-gray-500 px-2 py-1">
                                 Already have an account?{" "}
-                                <a href="/auth/login" className="text-blue-600 hover:text-blue-700 hover:underline">
+                                <Link href="/auth/login" className="text-blue-600 hover:text-blue-700 hover:underline">
                                     Login
-                                </a>
+                                </Link>
                             </p>
                         </div>
                     </div>
-
                 </div>
             </div>
 
-            {/* Background elements */}
+            {/* Background shapes */}
             <div className="fixed inset-0 -z-10 overflow-hidden">
                 <div className="absolute top-1/4 right-1/4 w-64 h-64 bg-gradient-to-r from-cyan-200/10 to-blue-200/10 rounded-full blur-2xl"></div>
                 <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-indigo-200/10 to-purple-200/10 rounded-full blur-2xl"></div>
